@@ -1,1 +1,3 @@
 ipython
+tiktoken
+torch
