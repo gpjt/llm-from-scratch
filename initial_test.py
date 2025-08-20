@@ -29,3 +29,10 @@ print("Input batch:\n", batch)
 out = model(batch)
 print("\nOutput shape:\n", out.shape)
 print(out)
+
+
+total_params = sum(p.numel() for p in model.parameters())
+print(f"Total nuumber of parameters: {total_params:,}")
+
+total_params_gpt2 = total_params - sum(p.numel() for p in model.out_head.parameters())
+print(f"Parameters if we were using weight tying: {total_params_gpt2:,}")
