@@ -48,7 +48,7 @@ class MultiHeadAttention(nn.Module):
         attn_scores = queries @ keys.transpose(2, 3)
         mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
 
-        attn_scores.masked_fill(mask_bool, -torch.inf)
+        attn_scores.masked_fill_(mask_bool, -torch.inf)
 
         attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
         attn_weights = self.dropout(attn_weights)
@@ -68,14 +68,14 @@ class MultiHeadAttention(nn.Module):
 class GELU(nn.Module):
 
     def forward(self, x):
-        return 0.5 * x * (1 - torch.tanh(torch.sqrt(torch.tensor(2.0 / torch.pi)) * (x + 0.044715 * torch.pow(x, 3))))
+        return 0.5 * x * (1 + torch.tanh(torch.sqrt(torch.tensor(2.0 / torch.pi)) * (x + 0.044715 * torch.pow(x, 3))))
 
 
 
 class FeedForward(nn.Module):
 
     def __init__(self, cfg):
-        super().__init__(self)
+        super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(cfg["emb_dim"], cfg["emb_dim"] * 4),
             GELU(),
@@ -109,7 +109,7 @@ class LayerNorm(nn.Module):
 class TransformersBlock(nn.Module):
 
     def __init__(self, cfg):
-        super().__init__(self)
+        super().__init__()
         self.att = MultiHeadAttention(
             d_in=cfg["emb_dim"],
             d_out=cfg["emb_dim"],
@@ -150,7 +150,7 @@ class GPTModel(nn.Module):
         self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
         self.drop_emb = nn.Dropout(cfg["drop_rate"])
 
-        self.srf_blocks = nn.Sequential(
+        self.trf_blocks = nn.Sequential(
             *[TransformersBlock(cfg) for _ in range(cfg["n_layers"])]
         )
 
