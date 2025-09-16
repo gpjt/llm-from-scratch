@@ -5,7 +5,7 @@ from gpt import GPTModel
 from generate_text_simple import generate_text_simple
 
 GPT_CONFIG_124M = {
-    "vocab_size": 50272,
+    "vocab_size": 50257,
     "context_length": 256,
     "emb_dim": 768,
     "n_heads": 12,
