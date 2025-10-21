@@ -1,6 +1,7 @@
 ipython
 matplotlib
 numpy
+pandas
 tensorflow>=2.15.0
 tiktoken
 torch
