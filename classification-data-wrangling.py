@@ -42,6 +42,18 @@ def create_balanced_dataset(df):
     return balanced_df
 
 
+def random_split(df, train_frac, validation_frac):
+    df = df.sample(frac=1, random_state=123).reset_index(drop=True)
+    train_end = int(len(df) * train_frac)
+    validation_end = train_end + int(len(df) * validation_frac)
+
+    train_df = df[:train_end]
+    validation_df = df[train_end:validation_end]
+    test_df = df[validation_end:]
+
+    return train_df, validation_df, test_df
+
+
 
 def main():
     download_and_unzip_spam_data(url, zip_path, extracted_path, data_file_path)
@@ -55,6 +67,17 @@ def main():
 
     balanced_df = create_balanced_dataset(df)
     print("After balance labels:", balanced_df["Label"].value_counts())
+
+    balanced_df["Label"] = balanced_df["Label"].map({"ham": 0, "spam": 1})
+    print(balanced_df)
+
+    train_df, validation_df, test_df = random_split(balanced_df, 0.7, 0.1)
+
+    train_df.to_csv("classification-train.csv", index=None)
+    validation_df.to_csv("classification-validation.csv", index=None)
+    test_df.to_csv("classification-test.csv", index=None)
+
+
 
 
 
