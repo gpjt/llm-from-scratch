@@ -31,6 +31,18 @@ def download_and_unzip_spam_data(
     print(f"File downloaded and saved as {data_file_path}")
 
 
+def create_balanced_dataset(df):
+    num_spam = df[df["Label"] == "spam"].shape[0]
+    ham_subset = df[df["Label"] == "ham"].sample(
+        num_spam, random_state=123
+    )
+    balanced_df = pd.concat([
+        ham_subset, df[df["Label"] == "spam"]
+    ])
+    return balanced_df
+
+
+
 def main():
     download_and_unzip_spam_data(url, zip_path, extracted_path, data_file_path)
 
@@ -38,6 +50,12 @@ def main():
         data_file_path, sep="\t", header=None, names=["Label", "Text"]
     )
     print(df)
+
+    print("Labels:", df["Label"].value_counts())
+
+    balanced_df = create_balanced_dataset(df)
+    print("After balance labels:", balanced_df["Label"].value_counts())
+
 
 
 
