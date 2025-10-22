@@ -400,6 +400,17 @@ def main():
 
     plot_values(epochs_tensor, examples_seen_tensor, train_losses, val_losses)
 
+    epochs_tensor = torch.linspace(0, num_epochs, len(train_accs))
+    examples_seen_tensor = torch.linspace(0, examples_seen, len(train_accs))
+    plot_values(epochs_tensor, examples_seen_tensor, train_accs, val_accs, label="accuracy")
+
+    train_accuracy = calc_accuracy_loader(train_loader, model, device)
+    val_accuracy = calc_accuracy_loader(val_loader, model, device)
+    test_accuracy = calc_accuracy_loader(test_loader, model, device)
+
+    print(f"Training accuracy: {train_accuracy * 100:.2f}%")
+    print(f"Validation accuracy: {val_accuracy * 100:.2f}%")
+    print(f"Test accuracy: {test_accuracy * 100:.2f}%")
 
 
 
