@@ -177,6 +177,22 @@ def main():
     )
     print(token_ids_to_text(token_ids, tokenizer))
 
+    print(model)
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    torch.manual_seed(123)
+    num_classes = 1
+    model.out_head = torch.nn.Linear(
+        in_features=BASE_CONFIG["emb_dim"],
+        out_features=num_classes
+    )
+    for param in model.trf_blocks[-1].parameters():
+        param.requires_grad = True
+    for param in model.final_norm.parameters():
+        param.requires_grad = True
+
 
 
 
