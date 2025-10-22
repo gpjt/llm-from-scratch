@@ -3,6 +3,13 @@ import tiktoken
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+from download_and_use_gpt2 import load_weights_into_gpt
+from generate_text_simple import generate_text_simple
+from gpt import GPTModel
+from gpt_download import download_and_load_gpt2
+from model_config import model_configs
+from second_generation_test import text_to_token_ids, token_ids_to_text
+
 
 class SpamDataset(Dataset):
 
@@ -110,6 +117,49 @@ def main():
     print(f"{len(train_loader)} training batches")
     print(f"{len(val_loader)} validation batches")
     print(f"{len(test_loader)} test batches")
+
+    CHOOSE_MODEL = "gpt2-small (124M)"
+    INPUT_PROMPT = "Every effort moves"
+    BASE_CONFIG = {
+        "vocab_size": 50257,
+        "context_length": 1024,
+        "drop_rate": 0.0,
+        "qkv_bias": True,
+    }
+    BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
+
+    model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
+    settings, params = download_and_load_gpt2(
+        model_size=model_size, models_dir="gpt2"
+    )
+
+    model = GPTModel(BASE_CONFIG)
+    load_weights_into_gpt(model, params)
+    model.eval()
+
+    text_1 = "Every effort moves you"
+    token_ids = generate_text_simple(
+        model=model,
+        idx=text_to_token_ids(text_1, tokenizer),
+        max_new_tokens=15,
+        context_size=BASE_CONFIG["context_length"]
+    )
+    print(token_ids_to_text(token_ids, tokenizer))
+
+    text_2 = (
+        "Is the following text 'spam'?  Answer with 'yes' or 'no':"
+        " 'You are a winner you have been specifically"
+        " selected to receive $1000 cash or a $2000 reward.'"
+    )
+    token_ids = generate_text_simple(
+        model=model,
+        idx=text_to_token_ids(text_2, tokenizer),
+        max_new_tokens=23,
+        context_size=BASE_CONFIG["context_length"]
+    )
+    print(token_ids_to_text(token_ids, tokenizer))
+
+
 
 
 

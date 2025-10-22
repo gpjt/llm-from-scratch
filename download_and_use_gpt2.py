@@ -121,21 +121,25 @@ def load_weights_into_gpt(gpt, params):
     )
 
 
-_, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
-load_weights_into_gpt(gpt, params)
-device = torch.device("cuda") if torch.cuda.is_available() else "gpu"
-gpt.to(device)
+def main():
+    _, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
+    load_weights_into_gpt(gpt, params)
+    device = torch.device("cuda") if torch.cuda.is_available() else "gpu"
+    gpt.to(device)
 
-tokenizer = tiktoken.get_encoding("gpt2")
+    tokenizer = tiktoken.get_encoding("gpt2")
 
-torch.manual_seed(123)
-token_ids = generate(
-    model=gpt,
-    idx=text_to_token_ids("Every effort moves you", tokenizer).to(device),
-    max_new_tokens=25,
-    context_size=NEW_CONFIG["context_length"],
-    top_k=50,
-    temperature=1.5,
-)
-print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+    torch.manual_seed(123)
+    token_ids = generate(
+        model=gpt,
+        idx=text_to_token_ids("Every effort moves you", tokenizer).to(device),
+        max_new_tokens=25,
+        context_size=NEW_CONFIG["context_length"],
+        top_k=50,
+        temperature=1.5,
+    )
+    print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
 
+
+if __name__ == "__main__":
+    main()
