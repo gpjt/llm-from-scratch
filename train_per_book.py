@@ -169,34 +169,37 @@ def train_model_simple(
     return train_losses, val_losses, track_tokens_seen
 
 
-torch.manual_seed(123)
-model = GPTModel(GPT_CONFIG_124M)
-model.to(device)
+def main():
+    torch.manual_seed(123)
+    model = GPTModel(GPT_CONFIG_124M)
+    model.to(device)
 
-optimizer = torch.optim.AdamW(
-    model.parameters(),
-    lr=0.0004, weight_decay=0.1
-)
-num_epochs = 10
-train_losses, val_losses, tokens_seen = train_model_simple(
-    model, train_loader, val_loader, optimizer, device,
-    num_epochs=num_epochs, eval_freq=5, eval_iter=5,
-    start_context="Every effort moves you", tokenizer=tokenizer
-)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=0.0004, weight_decay=0.1
+    )
+    num_epochs = 10
+    train_losses, val_losses, tokens_seen = train_model_simple(
+        model, train_loader, val_loader, optimizer, device,
+        num_epochs=num_epochs, eval_freq=5, eval_iter=5,
+        start_context="Every effort moves you", tokenizer=tokenizer
+    )
 
-model.to("cpu")
-model.eval()
-
-
-torch.manual_seed(123)
-token_ids = generate(
-    model=model,
-    idx=text_to_token_ids("Every effort moves you", tokenizer),
-    max_new_tokens=15,
-    context_size=GPT_CONFIG_124M["context_length"],
-    top_k=25,
-    temperature=1.4
-)
-print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+    model.to("cpu")
+    model.eval()
 
 
+    torch.manual_seed(123)
+    token_ids = generate(
+        model=model,
+        idx=text_to_token_ids("Every effort moves you", tokenizer),
+        max_new_tokens=15,
+        context_size=GPT_CONFIG_124M["context_length"],
+        top_k=25,
+        temperature=1.4
+    )
+    print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+
+
+if __name__ == "__main__":
+    main()

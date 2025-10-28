@@ -1,18 +1,21 @@
 from functools import partial
 import json
 import os
+import time
 import urllib.request
 
 import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from classification_train import plot_values
 from download_and_use_gpt2 import load_weights_into_gpt
 from generate_text import generate
 from gpt import GPTModel
 from gpt_download import download_and_load_gpt2
 from model_config import model_configs
 from second_generation_test import text_to_token_ids, token_ids_to_text
+from train_per_book import calc_loss_loader, train_model_simple
 
 
 def download_and_load_file(file_path, url):
@@ -273,6 +276,43 @@ def main():
 
     response_text = generated_text[len(input_text):].strip()
     print(response_text)
+
+    model.to(device)
+    torch.manual_seed(123)
+
+    with torch.no_grad():
+        train_loss = calc_loss_loader(
+            train_loader, model, device, num_batches=5
+        )
+        val_loss = calc_loss_loader(
+            val_loader, model, device, num_batches=5
+        )
+
+    print("Training loss:", train_loss)
+    print("Validation loss:", val_loss)
+
+    start_time = time.time()
+    torch.manual_seed(123)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=0.00005, weight_decay=0.1
+    )
+    num_epochs = 2
+
+    train_losses, val_losses, tokens_seen = train_model_simple(
+        model, train_loader, val_loader, optimizer, device,
+        num_epochs=num_epochs, eval_freq=5, eval_iter=5,
+        start_context=format_input(val_data[0]), tokenizer=tokenizer
+    )
+
+    end_time = time.time()
+
+    execution_time = end_time - start_time
+    execution_time_minutes = execution_time // 60
+    execution_time_seconds = execution_time % 60
+    print(f"Training completed in {execution_time_minutes}m{execution_time_seconds:.2f}s")
+
+    epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
+    plot_values(epochs_tensor, tokens_seen, train_losses, val_losses, f"instruction-fine-tune-{num_epochs}-epochs-losses")
 
 
 
