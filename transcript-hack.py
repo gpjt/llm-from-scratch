@@ -1,3 +1,4 @@
+import click
 import tiktoken
 
 from download_and_use_gpt2 import load_weights_into_gpt
@@ -8,19 +9,20 @@ from model_config import model_configs
 from second_generation_test import text_to_token_ids, token_ids_to_text
 
 
-def main():
+@click.command()
+@click.argument("model")
+def main(model):
     tokenizer = tiktoken.get_encoding("gpt2")
 
-    CHOOSE_MODEL = "gpt2-medium (355M)"
     BASE_CONFIG = {
         "vocab_size": 50257,
         "context_length": 1024,
         "drop_rate": 0.0,
         "qkv_bias": True,
     }
-    BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
+    BASE_CONFIG.update(model_configs[model])
 
-    model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
+    model_size = model.split(" ")[-1].lstrip("(").rstrip(")")
     settings, params = download_and_load_gpt2(
         model_size=model_size, models_dir="gpt2"
     )
@@ -34,7 +36,7 @@ def main():
         "This is a transcript of a conversation between a helpful bot, 'Bot', "
         "and a human, 'User'.  The bot is very intelligent and always answers "
         "the human's questions with a useful reply.\n\n"
-        "Human: Provide a synonym for 'bright'\n\n"
+        "User: Provide a synonym for 'bright'\n\n"
         "Bot: "
     )
     token_ids = generate_text_simple(
