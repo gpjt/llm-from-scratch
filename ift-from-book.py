@@ -7,6 +7,13 @@ import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from download_and_use_gpt2 import load_weights_into_gpt
+from generate_text import generate
+from gpt import GPTModel
+from gpt_download import download_and_load_gpt2
+from model_config import model_configs
+from second_generation_test import text_to_token_ids, token_ids_to_text
+
 
 def download_and_load_file(file_path, url):
     if not os.path.exists(file_path):
@@ -232,8 +239,40 @@ def main():
     for inputs, targets in train_loader:
         print(inputs.shape, targets.shape)
 
+    BASE_CONFIG = {
+        "vocab_size": 50257,
+        "context_length": 1024,
+        "drop_rate": 0.0,
+        "qkv_bias": True,
+    }
+    CHOOSE_MODEL = "gpt2-medium (355M)"
+    BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
 
+    model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
 
+    settings, params = download_and_load_gpt2(
+        model_size=model_size, models_dir="gpt2"
+    )
+
+    model = GPTModel(BASE_CONFIG)
+    load_weights_into_gpt(model, params)
+    model.eval()
+
+    torch.manual_seed(123)
+    input_text = format_input(val_data[0])
+    print(input_text)
+
+    token_ids = generate(
+        model=model,
+        idx=text_to_token_ids(input_text, tokenizer),
+        max_new_tokens=35,
+        context_size=BASE_CONFIG["context_length"],
+        eos_id=50256,
+    )
+    generated_text = token_ids_to_text(token_ids, tokenizer)
+
+    response_text = generated_text[len(input_text):].strip()
+    print(response_text)
 
 
 
