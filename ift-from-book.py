@@ -33,7 +33,7 @@ def download_and_load_file(file_path, url):
 
 def format_input(entry):
     instruction_text = (
-        f"Below is an instruction that described a task. "
+        f"Below is an instruction that describes a task. "
         f"Write a response that appropriately completes the request."
         f"\n\n### Instruction:\n{entry['instruction']}"
     )
