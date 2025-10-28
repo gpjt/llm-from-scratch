@@ -6,3 +6,4 @@ sms_spam_collection/
 classification-test.csv
 classification-train.csv
 classification-validation.csv
+instruction-data.json
