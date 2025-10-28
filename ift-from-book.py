@@ -2,6 +2,9 @@ import json
 import os
 import urllib.request
 
+import torch
+from torch.utils.data import Dataset
+
 
 def download_and_load_file(file_path, url):
     if not os.path.exists(file_path):
@@ -27,6 +30,44 @@ def format_input(entry):
         f"\n\n### Input\n{entry['input']}" if entry["input"] else ""
     )
     return instruction_text + input_text
+
+
+class InstructionDataset(Dataset):
+    def __init__(self, data, tokenizer):
+        self.data = data
+        self.encoded_texts = []
+        for entry in data:
+            instruction_plus_input = format_input(entry)
+            response_text = f"\n\n### Response:\n{entry['output']}"
+            full_text = instruction_plus_input + response_text
+            self.encoded_texts.append(tokenizer.encode(full_text))
+
+    def __getitem__(self, ix):
+        return self.encoded_texts[ix]
+
+    def __len__(self):
+        return len(self.encoded_texts)
+
+
+def custom_collate_draft_1(
+    batch, pad_token_id=50256, device="cpu"
+):
+    batch_max_length = max(len(item) + 1 for item in batch)
+    inputs_lst = []
+
+    for item in batch:
+        new_item = item.copy()
+        new_item += [pad_token_id]
+
+        padded = (
+            new_item + [pad_token_id] * (batch_max_length - len(new_item))
+        )
+
+        inputs = torch.tensor(padded[:-1])
+        inputs_lst.append(inputs)
+
+    inputs_tensor = torch.stack(inputs_lst).to(device)
+    return inputs_tensor
 
 
 def main():
@@ -59,6 +100,18 @@ def main():
     print("Training set length:", len(train_data))
     print("Test set length:", len(test_data))
     print("Validation set length:", len(val_data))
+
+    inputs_1 = [0, 1, 2, 3, 4]
+    inputs_2 = [5, 6]
+    inputs_3 = [7, 8, 9]
+    batch = (
+        inputs_1,
+        inputs_2,
+        inputs_3,
+    )
+    print(custom_collate_draft_1(batch))
+
+
 
 
 
