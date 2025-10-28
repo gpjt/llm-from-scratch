@@ -1,3 +1,5 @@
+accelerate
+click
 ipython
 matplotlib
 numpy
@@ -6,3 +8,4 @@ tensorflow>=2.15.0
 tiktoken
 torch
 tqdm>=4.66
+transformers
