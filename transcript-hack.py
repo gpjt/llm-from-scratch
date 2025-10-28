@@ -11,7 +11,7 @@ from second_generation_test import text_to_token_ids, token_ids_to_text
 def main():
     tokenizer = tiktoken.get_encoding("gpt2")
 
-    CHOOSE_MODEL = "gpt2-small (124M)"
+    CHOOSE_MODEL = "gpt2-medium (355M)"
     BASE_CONFIG = {
         "vocab_size": 50257,
         "context_length": 1024,
