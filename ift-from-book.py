@@ -1,8 +1,11 @@
 from functools import partial
 import json
 import os
+import re
 import time
 import urllib.request
+
+from tqdm import tqdm
 
 import tiktoken
 import torch
@@ -313,6 +316,61 @@ def main():
 
     epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
     plot_values(epochs_tensor, tokens_seen, train_losses, val_losses, f"instruction-fine-tune-{num_epochs}-epochs-losses")
+
+    torch.manual_seed(123)
+
+    for entry in test_data[:3]:
+        input_text = format_input(entry)
+        token_ids = generate(
+            model=model,
+            idx=text_to_token_ids(input_text, tokenizer).to(device),
+            max_new_tokens=256,
+            context_size=BASE_CONFIG["context_length"],
+            eos_id=50256,
+        )
+        generated_text = token_ids_to_text(token_ids, tokenizer)
+
+        response_text = (
+            generated_text[len(input_text):]
+            .replace("### Response:", "")
+            .strip()
+        )
+        print(input_text)
+        print(f"\nCorrect response:\n>> {entry['output']}")
+        print(f"\nModel response:\n>> {response_text.strip()}")
+
+    start_generate = time.time()
+    for i, entry in tqdm(enumerate(test_data), total=len(test_data)):
+        input_text = format_input(entry)
+        token_ids = generate(
+            model=model,
+            idx=text_to_token_ids(input_text, tokenizer).to(device),
+            max_new_tokens=256,
+            context_size=BASE_CONFIG["context_length"],
+            eos_id=50256,
+        )
+        generated_text = token_ids_to_text(token_ids, tokenizer)
+
+        response_text = (
+            generated_text[len(input_text):]
+            .replace("### Response:", "")
+            .strip()
+        )
+        test_data[i]["model_response"] = response_text
+
+    with open("instruction-data-with-responses.json", "w") as file:
+        json.dump(test_data, file, indent=4)
+
+    end_generate = time.time()
+    print(f"Generated all test data in {end_generate - start_generate}s")
+
+    file_name = f"{re.sub(r'[ ()]', '', CHOOSE_MODEL)}-sft.pth"
+    torch.save(model.state_dict(), file_name)
+    print(f"Model saved as {file_name}")
+
+
+
+
 
 
 
