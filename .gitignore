@@ -11,3 +11,5 @@ gpt2-medium355M-sft.pth
 instruction-data-with-responses.json
 instruction-fine-tune-2-epochs-losses-plot.png
 instruction-fine-tune-5-epochs-losses-plot.png
+fineweb-edu/
+fineweb/

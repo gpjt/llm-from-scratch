@@ -1,5 +1,6 @@
 accelerate
 click
+datasets
 ipython
 matplotlib
 numpy
