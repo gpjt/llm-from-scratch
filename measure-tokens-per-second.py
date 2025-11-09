@@ -3,11 +3,12 @@ import time
 import tiktoken
 import torch
 from datasets import load_dataset
+from tqdm import tqdm
 
 from gpt import GPTModel
 
 NUM_BATCHES = 100
-BATCH_SIZE = 5
+MAX_BATCH_SIZE = 10
 SEQ_LENGTH = 1024
 
 
@@ -24,9 +25,6 @@ def main():
         "qkv_bias": False
     }
 
-    model = GPTModel(big_train_params)
-    model.to(device)
-
     ds = load_dataset(
         "parquet",
         data_files="./fineweb/sample/10BT/*.parquet",
@@ -35,7 +33,7 @@ def main():
 
     tokenizer = tiktoken.get_encoding("gpt2")
     all_tokens = []
-    train_tokens = (NUM_BATCHES * BATCH_SIZE * SEQ_LENGTH) + 1
+    train_tokens = (NUM_BATCHES * MAX_BATCH_SIZE * SEQ_LENGTH) + 1
     for element in ds:
         text = element["text"]
         tokens = tokenizer.encode(text)
@@ -43,41 +41,48 @@ def main():
         if len(all_tokens) >= train_tokens:
             break
     all_tokens = all_tokens[:train_tokens]
-    input_token_count = train_tokens - 1
-    print(f"Training on {input_token_count:,} input tokens")
 
-    batches = []
-    for batch in range(NUM_BATCHES):
-        start = batch * BATCH_SIZE * SEQ_LENGTH
-        end = start + BATCH_SIZE * SEQ_LENGTH
-        inputs = all_tokens[start:end]
-        outputs = all_tokens[start + 1:end + 1]
-        input_tensor = torch.tensor(inputs).reshape(BATCH_SIZE, SEQ_LENGTH)
-        output_tensor = torch.tensor(outputs).reshape(BATCH_SIZE, SEQ_LENGTH)
-        batches.append((input_tensor, output_tensor))
+    for batch_size in range(1, MAX_BATCH_SIZE + 1):
+        print(f"Testing with batch size {batch_size}")
+        torch.manual_seed(42)
+        model = GPTModel(big_train_params)
+        model.to(device)
+        model.train()
 
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=0.0004, weight_decay=0.1
-    )
+        batches = []
+        input_token_count = 0
+        for batch in range(NUM_BATCHES):
+            start = batch * batch_size * SEQ_LENGTH
+            end = start + batch_size * SEQ_LENGTH
+            inputs = all_tokens[start:end]
+            outputs = all_tokens[start + 1:end + 1]
+            input_tensor = torch.tensor(inputs).reshape(batch_size, SEQ_LENGTH)
+            output_tensor = torch.tensor(outputs).reshape(batch_size, SEQ_LENGTH)
+            batches.append((input_tensor, output_tensor))
+            input_token_count += batch_size * SEQ_LENGTH
 
-    start = time.time()
-    for inputs, outputs in batches:
-        inputs = inputs.to(device)
-        outputs = outputs.to(device)
-        optimizer.zero_grad()
-        logits = model(inputs)
-        loss = torch.nn.functional.cross_entropy(
-            logits.flatten(0, 1), outputs.flatten()
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=0.0004, weight_decay=0.1
         )
-        loss.backward()
-        optimizer.step()
-    end = time.time()
 
-    seconds = end - start
+        start = time.time()
+        for inputs, outputs in tqdm(batches):
+            inputs = inputs.to(device)
+            outputs = outputs.to(device)
+            optimizer.zero_grad(set_to_none=True)
+            logits = model(inputs)
+            loss = torch.nn.functional.cross_entropy(
+                logits.flatten(0, 1), outputs.flatten()
+            )
+            loss.backward()
+            optimizer.step()
+        end = time.time()
 
-    print(f"Done, {input_token_count:,} tokens done in {seconds:.4f}s.")
-    print(f"Tokens per second: {int(input_token_count / seconds):,}")
+        seconds = end - start
+
+        print(f"Done, trained on {input_token_count:,} tokens in {seconds:.4f}s.")
+        print(f"Tokens per second: {int(input_token_count / seconds):,}\n")
 
 
 if __name__ == "__main__":
