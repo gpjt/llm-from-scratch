@@ -42,6 +42,8 @@ def main():
             break
     all_tokens = all_tokens[:train_tokens]
 
+    torch.set_float32_matmul_precision("high")
+
     for batch_size in range(1, MAX_BATCH_SIZE + 1):
         print(f"Testing with batch size {batch_size}")
         torch.manual_seed(42)
