@@ -5,7 +5,7 @@ from shutil import rmtree
 import tiktoken
 import torch
 from datasets import load_dataset
-from safetensors.torch import save_file
+from safetensors.torch import load_file, save_file
 from tqdm import tqdm
 
 from gpt import GPTModel
@@ -80,6 +80,13 @@ def main():
         scaler.step(optimizer)
         scaler.update()
 
+    with torch.no_grad():
+        logits = model(inputs)
+        loss = torch.nn.functional.cross_entropy(
+            logits.flatten(0, 1), outputs.flatten()
+        )
+    print(f"Loss prior to checkpoint: {loss.item():.4f}")
+
     start = time.time()
     checkpoint_dir = Path(__file__).resolve().parent / "tmp-test-checkpoint"
     if checkpoint_dir.exists():
@@ -89,8 +96,29 @@ def main():
     torch.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
     torch.save(scaler.state_dict(), checkpoint_dir / "scaler.pt")
     end = time.time()
-
     print(f"Checkpoint saved in {end - start:.2f}s")
+
+    start = time.time()
+    model = GPTModel(big_train_params)
+    model.load_state_dict(load_file(checkpoint_dir / "model.safetensors"))
+    model.to(device)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=0.0004, weight_decay=0.1
+    )
+    optimizer.load_state_dict(torch.load(checkpoint_dir / "optimizer.pt"))
+    scaler = torch.amp.GradScaler()
+    scaler.load_state_dict(torch.load(checkpoint_dir / "scaler.pt"))
+    end = time.time()
+    print(f"Checkpoint loaded in {end - start:.2f}s")
+
+    with torch.no_grad():
+        logits = model(inputs)
+        loss = torch.nn.functional.cross_entropy(
+            logits.flatten(0, 1), outputs.flatten()
+        )
+    print(f"Loss after checkpoint: {loss.item():.4f}")
+
 
 
 
