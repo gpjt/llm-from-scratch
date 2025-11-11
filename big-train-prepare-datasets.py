@@ -26,10 +26,10 @@ def build_and_save_dataset_tensor(ds, tokenizer, token_count, path):
         print(f"{num_tokens:,}/{token_count:,}")
         texts = ds[ix:ix + batch_size]["text"]
         text_tokens = tokenizer.encode_batch(texts)
-        all_tokens = sum(
-            (tokens + [tokenizer.eot_token] for tokens in text_tokens),
-            start=[]
-        )
+        all_tokens = []
+        for toks in text_tokens:
+            all_tokens.extend(toks)
+            all_tokens.append(tokenizer.eot_token)
         results.append(torch.tensor(all_tokens, dtype=torch.int32))
         num_tokens += len(all_tokens)
         if num_tokens > token_count:
