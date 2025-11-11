@@ -19,6 +19,7 @@ TRAIN_TOKEN_COUNT = math.ceil(CHINCHILLA_OPTIMUM_TOKENS / BATCH_TOKENS) * BATCH_
 
 
 def build_and_save_dataset_tensor(ds, tokenizer, token_count, path):
+    print(f"Building dataset for {path}")
     results = []
     num_tokens = 0
     batch_size = 1000
@@ -58,7 +59,10 @@ def main():
         splits["validation"], tokenizer, VAL_TOKEN_COUNT,
         dataset_dir / "validation.safetensors"
     )
-
+    build_and_save_dataset_tensor(
+        splits["train"], tokenizer, TRAIN_TOKEN_COUNT,
+        dataset_dir / "train.safetensors"
+    )
 
 
 if __name__ == "__main__":
