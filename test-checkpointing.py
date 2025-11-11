@@ -67,6 +67,7 @@ def main():
         lr=0.0004, weight_decay=0.1
     )
 
+    model.train()
     for inputs, outputs in tqdm(batches[:NUM_BATCHES]):
         inputs = inputs.to(device)
         outputs = outputs.to(device)
@@ -82,6 +83,7 @@ def main():
 
     torch.manual_seed(42)
     with torch.no_grad():
+        model.eval()
         logits = model(inputs)
         loss = torch.nn.functional.cross_entropy(
             logits.flatten(0, 1), outputs.flatten()
@@ -115,12 +117,14 @@ def main():
 
     torch.manual_seed(42)
     with torch.no_grad():
+        model.eval()
         logits = model(inputs)
         loss = torch.nn.functional.cross_entropy(
             logits.flatten(0, 1), outputs.flatten()
         )
     print(f"Loss after checkpoint load: {loss.item():.4f}")
 
+    model.train()
     for inputs, outputs in tqdm(batches[NUM_BATCHES:]):
         inputs = inputs.to(device)
         outputs = outputs.to(device)
