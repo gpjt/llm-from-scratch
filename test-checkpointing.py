@@ -80,6 +80,7 @@ def main():
         scaler.step(optimizer)
         scaler.update()
 
+    torch.manual_seed(42)
     with torch.no_grad():
         logits = model(inputs)
         loss = torch.nn.functional.cross_entropy(
@@ -112,6 +113,7 @@ def main():
     end = time.time()
     print(f"Checkpoint loaded in {end - start:.2f}s")
 
+    torch.manual_seed(42)
     with torch.no_grad():
         logits = model(inputs)
         loss = torch.nn.functional.cross_entropy(
