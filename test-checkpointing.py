@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from shutil import rmtree
 
@@ -35,7 +36,7 @@ def main():
 
     tokenizer = tiktoken.get_encoding("gpt2")
     all_tokens = []
-    train_tokens = (NUM_BATCHES * BATCH_SIZE * SEQ_LENGTH) + 1
+    train_tokens = (NUM_BATCHES * 2 * BATCH_SIZE * SEQ_LENGTH) + 1
     for element in ds:
         text = element["text"]
         tokens = tokenizer.encode(text)
@@ -52,8 +53,7 @@ def main():
     model.train()
 
     batches = []
-    input_token_count = 0
-    for batch in range(NUM_BATCHES):
+    for batch in range(2 * NUM_BATCHES):
         start = batch * BATCH_SIZE * SEQ_LENGTH
         end = start + BATCH_SIZE * SEQ_LENGTH
         inputs = all_tokens[start:end]
@@ -67,7 +67,7 @@ def main():
         lr=0.0004, weight_decay=0.1
     )
 
-    for inputs, outputs in tqdm(batches):
+    for inputs, outputs in tqdm(batches[:NUM_BATCHES]):
         inputs = inputs.to(device)
         outputs = outputs.to(device)
         optimizer.zero_grad(set_to_none=True)
@@ -80,6 +80,7 @@ def main():
         scaler.step(optimizer)
         scaler.update()
 
+    start = time.time()
     checkpoint_dir = Path(__file__).resolve().parent / "tmp-test-checkpoint"
     if checkpoint_dir.exists():
         rmtree(checkpoint_dir)
@@ -87,7 +88,9 @@ def main():
     save_file(model.state_dict(), checkpoint_dir / "model.safetensors")
     torch.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
     torch.save(scaler.state_dict(), checkpoint_dir / "scaler.pt")
+    end = time.time()
 
+    print(f"Checkpoint saved in {end - start:.2f}s")
 
 
 
