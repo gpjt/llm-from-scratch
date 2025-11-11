@@ -8,8 +8,8 @@ from tqdm import tqdm
 from gpt import GPTModel
 
 TRAIN_BATCHES = 100
-MIN_VALIDATION_BATCHES = 2000
-MAX_VALIDATION_BATCHES = 2500
+MIN_VALIDATION_BATCHES = 2900
+MAX_VALIDATION_BATCHES = 4000
 
 BATCH_SIZE = 6
 SEQ_LENGTH = 1024
@@ -86,12 +86,14 @@ def main():
         scaler.update()
 
     model.eval()
-    with torch.no_grad():
-        for validation_batch_size in range(MIN_VALIDATION_BATCHES, MAX_VALIDATION_BATCHES + 1, 100):
-            print(f"Timing validation batch size {validation_batch_size}")
+    with torch.inference_mode(), torch.amp.autocast(device_type=device.type, dtype=torch.float16):
+        for num_validation_batches in range(MIN_VALIDATION_BATCHES, MAX_VALIDATION_BATCHES + 1, 100):
+            print(f"Timing validation batch size {num_validation_batches}")
+            if device.type == "cuda":
+                torch.cuda.synchronize()
             start = time.time()
             losses = []
-            for inputs, outputs in tqdm(validation_batches[:validation_batch_size]):
+            for inputs, outputs in tqdm(validation_batches[:num_validation_batches]):
                 inputs = inputs.to(device)
                 outputs = outputs.to(device)
                 logits = model(inputs)
@@ -100,6 +102,8 @@ def main():
                 )
                 losses.append(loss.item())
             avg_loss = sum(losses) / len(losses)
+            if device.type == "cuda":
+                torch.cuda.synchronize()
             end = time.time()
             print(f"Got loss {avg_loss:.4f} in {end - start:.4f}s")
 
