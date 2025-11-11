@@ -119,7 +119,28 @@ def main():
         loss = torch.nn.functional.cross_entropy(
             logits.flatten(0, 1), outputs.flatten()
         )
-    print(f"Loss after checkpoint: {loss.item():.4f}")
+    print(f"Loss after checkpoint load: {loss.item():.4f}")
+
+    for inputs, outputs in tqdm(batches[NUM_BATCHES:]):
+        inputs = inputs.to(device)
+        outputs = outputs.to(device)
+        optimizer.zero_grad(set_to_none=True)
+        with torch.amp.autocast(device_type=device.type, dtype=torch.float16):
+            logits = model(inputs)
+            loss = torch.nn.functional.cross_entropy(
+                logits.flatten(0, 1), outputs.flatten()
+            )
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+    torch.manual_seed(42)
+    with torch.no_grad():
+        logits = model(inputs)
+        loss = torch.nn.functional.cross_entropy(
+            logits.flatten(0, 1), outputs.flatten()
+        )
+    print(f"Loss after further training: {loss.item():.4f}")
 
 
 
