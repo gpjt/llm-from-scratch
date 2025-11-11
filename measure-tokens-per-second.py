@@ -43,6 +43,7 @@ def main():
     all_tokens = all_tokens[:train_tokens]
 
     torch.set_float32_matmul_precision("high")
+    scaler = torch.amp.GradScaler()
 
     for batch_size in range(1, MAX_BATCH_SIZE + 1):
         print(f"Testing with batch size {batch_size}")
@@ -73,12 +74,14 @@ def main():
             inputs = inputs.to(device)
             outputs = outputs.to(device)
             optimizer.zero_grad(set_to_none=True)
-            logits = model(inputs)
-            loss = torch.nn.functional.cross_entropy(
-                logits.flatten(0, 1), outputs.flatten()
-            )
-            loss.backward()
-            optimizer.step()
+            with torch.amp.autocast(device_type=device.type, dtype=torch.float16):
+                logits = model(inputs)
+                loss = torch.nn.functional.cross_entropy(
+                    logits.flatten(0, 1), outputs.flatten()
+                )
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
         end = time.time()
 
         seconds = end - start
