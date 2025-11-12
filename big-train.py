@@ -103,7 +103,7 @@ def calculate_loss(logits, targets):
     )
 
 
-MINS_BETWEEN_VAL_AND_CHECKPOINT = 0.1
+MINS_BETWEEN_VAL_AND_CHECKPOINT = 30
 EXPECTED_ITERATIONS_PER_SEC = 3.29
 VAL_AND_CHECKPOINT_INTERVAL = int(
     MINS_BETWEEN_VAL_AND_CHECKPOINT * 60 * EXPECTED_ITERATIONS_PER_SEC
@@ -202,7 +202,6 @@ def train(
                     val_losses.append(
                         calculate_loss(val_logits, val_targets).item()
                     )
-                    break
                 val_loss = sum(val_losses) / len(val_losses)
 
             if best_loss is None or val_loss < best_loss:
