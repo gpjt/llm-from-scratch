@@ -165,6 +165,7 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
     torch.set_float32_matmul_precision("high")
 
     best_loss = None
+    print(f"Starting training at dataset offset {train_ds_offset}")
     for ix in tqdm(range(train_ds_offset, len(train_ds))):
         model.train()
         inputs, targets = train_ds[ix]
@@ -232,13 +233,14 @@ def main(checkpoint):
     }
 
     model = GPTModel(big_train_params)
+    model.to(device)
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=0.0004, weight_decay=0.1
     )
 
-    scaler = torch.amp.GradScaler()
+    scaler = torch.amp.GradScaler(device.type)
 
     train_ds = load_dataset("train")
     val_ds = load_dataset("validation")
@@ -247,8 +249,6 @@ def main(checkpoint):
         train_ds_offset = load_checkpoint(checkpoint, model, optimizer, scaler)
     else:
         train_ds_offset = 0
-
-    model.to(device)
 
     train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset)
 
