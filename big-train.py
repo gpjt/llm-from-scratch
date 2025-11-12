@@ -101,7 +101,7 @@ def calculate_loss(logits, targets):
 
 MINS_BETWEEN_VAL_AND_CHECKPOINT = 0.1
 EXPECTED_ITERATIONS_PER_SEC = 3.29
-VAL_AND_CHECKPOINT_FREQUENCY = int(
+VAL_AND_CHECKPOINT_INTERVAL = int(
     MINS_BETWEEN_VAL_AND_CHECKPOINT * 60 * EXPECTED_ITERATIONS_PER_SEC
 )
 
@@ -183,7 +183,7 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
         scaler.step(optimizer)
         scaler.update()
 
-        if ix % VAL_AND_CHECKPOINT_FREQUENCY == 0:
+        if ix % VAL_AND_CHECKPOINT_INTERVAL == 0:
             print("Validation/checkpoint")
             model.eval()
             with torch.inference_mode(), torch.amp.autocast(device_type=device.type, dtype=torch.float16):
@@ -217,7 +217,7 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
             print("Continuing training")
 
 
-@click.command
+@click.command()
 @click.argument("checkpoint", default=None)
 def main(checkpoint):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -240,7 +240,7 @@ def main(checkpoint):
         lr=0.0004, weight_decay=0.1
     )
 
-    scaler = torch.amp.GradScaler(device.type)
+    scaler = torch.amp.GradScaler(device=device.type)
 
     train_ds = load_dataset("train")
     val_ds = load_dataset("validation")
