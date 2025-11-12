@@ -97,14 +97,17 @@ def calculate_loss(logits, targets):
 
 
 MINS_BETWEEN_VAL_AND_CHECKPOINT = 0.1
-EXPECTED_ITERATIONS_SEC = 3.29
+EXPECTED_ITERATIONS_PER_SEC = 3.29
 VAL_AND_CHECKPOINT_FREQUENCY = int(
-    MINS_BETWEEN_VAL_AND_CHECKPOINT * 60 * EXPECTED_ITERATIONS_SEC
+    MINS_BETWEEN_VAL_AND_CHECKPOINT * 60 * EXPECTED_ITERATIONS_PER_SEC
 )
 
 
 def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
     device = next(model.parameters()).device
+
+    torch.set_float32_matmul_precision("high")
+
     best_loss = None
     for ix in tqdm(range(train_ds_offset, len(train_ds))):
         model.train()
@@ -124,7 +127,7 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
         scaler.update()
 
         if ix % VAL_AND_CHECKPOINT_FREQUENCY == 0:
-            print(f"Validation/checkpoint")
+            print("Validation/checkpoint")
             model.eval()
             with torch.inference_mode(), torch.amp.autocast(device_type=device.type, dtype=torch.float16):
                 val_losses = []
