@@ -5,8 +5,10 @@ from pathlib import Path
 import click
 from tqdm import tqdm
 
+from matplotlib.ticker import MaxNLocator
 from safetensors.torch import load_file, save_file
 from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
 import torch
 
 from gpt import GPTModel
@@ -31,7 +33,7 @@ def load_checkpoint(checkpoint, model, optimizer, scaler):
 def save_checkpoint(
     name,
     model, optimizer, scaler,
-    val_loss,
+    train_loss, val_loss,
     train_ds_offset, is_best
 ):
     if not CHECKPOINTS_DIR.exists():
@@ -49,6 +51,7 @@ def save_checkpoint(
     with open(checkpoint_dir / "meta.json", "w") as f:
         json.dump(
             dict(
+                train_loss=train_loss,
                 val_loss=val_loss,
                 train_ds_offset=train_ds_offset,
                 is_best=is_best,
@@ -103,6 +106,59 @@ VAL_AND_CHECKPOINT_FREQUENCY = int(
 )
 
 
+def get_training_data():
+    train_losses = []
+    val_losses = []
+    best_train_ds_offset = None
+    for item in CHECKPOINTS_DIR.iterdir():
+        if item.name == "latest":
+            continue
+
+        meta = json.loads((item / "meta.json").read_text())
+        if item.name == "best":
+            best_train_ds_offset = meta["train_ds_offset"]
+            continue
+
+        train_losses.append((meta["train_ds_offset"], meta["train_loss"]))
+        val_losses.append((meta["train_ds_offset"], meta["val_loss"]))
+
+    train_losses.sort(key=lambda x: x[0])
+    val_losses.sort(key=lambda x: x[0])
+
+    return train_losses, val_losses, best_train_ds_offset
+
+
+def generate_training_chart():
+    train_points, val_points, best_train_ds_offset = get_training_data()
+
+    plt.title("TRAINING RUN LOSS")
+    plt.xkcd()
+    plt.rcParams['font.family'] = "xkcd"
+
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+
+    train_epochs, train_losses = zip(*train_points)
+    val_epochs, val_losses = zip(*val_points)
+    ax.plot(train_epochs, train_losses, label="TRAINING LOSS", marker="o")
+    ax.plot(val_epochs, val_losses, label="VALIDATION LOSS", marker="s")
+
+    ax.axvline(
+        best_train_ds_offset, color="red", linestyle="--", linewidth=1.5,
+        label="BEST ITERATION"
+    )
+
+    ax.set_title("TRAINING RUN LOSS")
+    ax.set_xlabel("ITERATION")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_ylabel("LOSS")
+    ax.legend()
+
+    fig.tight_layout()
+    image_file = MY_DIR / "big-training-run-chart.png"
+    fig.savefig(image_file, bbox_inches="tight")
+    plt.close(fig)
+
+
 def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
     device = next(model.parameters()).device
 
@@ -150,10 +206,11 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
             save_checkpoint(
                 f"iteration-{ix}",
                 model, optimizer, scaler,
-                val_loss,
+                train_loss.item(), val_loss,
                 ix,
                 is_best
             )
+            generate_training_chart()
 
             model.train()
             print("Continuing training")

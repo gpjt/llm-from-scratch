@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Training Run</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { height: 100%; margin: 0; background: #111; color: #eee; }
+    .wrap {
+      height: 100%; display: grid; place-items: center; gap: 0.5rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    img { max-width: 95vw; max-height: 90vh; object-fit: contain; }
+    .meta { opacity: 0.7; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img id="preview" src="./big-training-run-chart.png" alt="Training run" />
+    <div class="meta">
+      Autorefreshing every 1s — <span id="status">waiting…</span>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const img = document.getElementById("preview");
+      const status = document.getElementById("status");
+      const base = "./big-training-run-chart.png";
+
+      function refresh() {
+        const t = Date.now(); // cache-bust
+        const next = `${base}?_ts=${t}`;
+        // Update status first so you can see ticks even if the image doesn't change
+        status.textContent = new Date(t).toLocaleTimeString();
+        // Swap src to force reload without flicker
+        const tmp = new Image();
+        tmp.onload = () => { img.src = next; };
+        tmp.onerror = () => { /* ignore; keeps last good frame */ };
+        tmp.src = next;
+      }
+
+      refresh();                    // initial
+      setInterval(refresh, 1000);   // every 1s
+    })();
+  </script>
+</body>
+</html>
