@@ -31,7 +31,7 @@ def load_checkpoint(checkpoint, model, optimizer, scaler):
 def save_checkpoint(
     name,
     model, optimizer, scaler,
-    train_loss, val_loss,
+    val_loss,
     train_ds_offset, is_best
 ):
     if not CHECKPOINTS_DIR.exists():
@@ -46,10 +46,9 @@ def save_checkpoint(
     torch.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
     torch.save(scaler.state_dict(), checkpoint_dir / "scaler.pt")
 
-    with open(checkpoint_dir / "meta.json") as f:
+    with open(checkpoint_dir / "meta.json", "w") as f:
         json.dump(
             dict(
-                train_loss=train_loss,
                 val_loss=val_loss,
                 train_ds_offset=train_ds_offset,
                 is_best=is_best,
@@ -97,14 +96,18 @@ def calculate_loss(logits, targets):
     )
 
 
+MINS_BETWEEN_VAL_AND_CHECKPOINT = 0.1
 EXPECTED_ITERATIONS_SEC = 3.29
-VAL_AND_CHECKPOINT_FREQUENCY = int(1 * 60 * EXPECTED_ITERATIONS_SEC)
-print(VAL_AND_CHECKPOINT_FREQUENCY)
+VAL_AND_CHECKPOINT_FREQUENCY = int(
+    MINS_BETWEEN_VAL_AND_CHECKPOINT * 60 * EXPECTED_ITERATIONS_SEC
+)
 
 
 def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
     device = next(model.parameters()).device
+    best_loss = None
     for ix in tqdm(range(train_ds_offset, len(train_ds))):
+        model.train()
         inputs, targets = train_ds[ix]
         inputs = inputs.to(device).to(torch.long)
         targets = targets.to(device).to(torch.long)
@@ -114,14 +117,43 @@ def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
         with torch.amp.autocast(device_type=device.type, dtype=torch.float16):
             logits = model(inputs)
 
-            loss = calculate_loss(logits, targets)
+            train_loss = calculate_loss(logits, targets)
 
-        scaler.scale(loss).backward()
+        scaler.scale(train_loss).backward()
         scaler.step(optimizer)
         scaler.update()
 
         if ix % VAL_AND_CHECKPOINT_FREQUENCY == 0:
-            print("CHECKPOINT AND EVAL")
+            print(f"Validation/checkpoint")
+            model.eval()
+            with torch.inference_mode(), torch.amp.autocast(device_type=device.type, dtype=torch.float16):
+                val_losses = []
+                for val_inputs, val_targets in tqdm(val_ds):
+                    val_inputs = val_inputs.to(device).to(torch.long)
+                    val_targets = val_targets.to(device).to(torch.long)
+                    val_logits = model(val_inputs)
+                    val_losses.append(
+                        calculate_loss(val_logits, val_targets).item()
+                    )
+                    break
+                val_loss = sum(val_losses) / len(val_losses)
+
+            if best_loss is None or val_loss < best_loss:
+                is_best = True
+                best_loss = val_loss
+            else:
+                is_best = False
+
+            save_checkpoint(
+                f"iteration-{ix}",
+                model, optimizer, scaler,
+                val_loss,
+                ix,
+                is_best
+            )
+
+            model.train()
+            print("Continuing training")
 
 
 @click.command
