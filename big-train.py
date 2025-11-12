@@ -27,11 +27,12 @@ def load_checkpoint(checkpoint, model, optimizer, scaler):
 
     with open(checkpoint_dir / "meta.json", "r") as f:
         meta = json.load(f)
+        restart_ds_offset = meta["train_ds_offset"] + 1
 
     with open(CHECKPOINTS_DIR / "best" / "meta.json") as f:
         best_loss = json.load(f)["val_loss"]
 
-    return meta["train_ds_offset"], best_loss
+    return restart_ds_offset, best_loss
 
 
 def save_checkpoint(
