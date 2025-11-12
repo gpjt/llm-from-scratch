@@ -38,7 +38,7 @@ def save_checkpoint(
         CHECKPOINTS_DIR.mkdir()
 
     now = datetime.datetime.now(datetime.UTC)
-    checkpoint_name = f"{name}-{now:%Y%m%dZ%H%M%S}"
+    checkpoint_name = f"{now:%Y%m%dZ%H%M%S}-{name}"
     checkpoint_dir = CHECKPOINTS_DIR / checkpoint_name
     checkpoint_dir.mkdir()
 
