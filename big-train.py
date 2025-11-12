@@ -27,7 +27,11 @@ def load_checkpoint(checkpoint, model, optimizer, scaler):
 
     with open(checkpoint_dir / "meta.json", "r") as f:
         meta = json.load(f)
-    return meta["train_ds_offset"]
+
+    with open(CHECKPOINTS_DIR / "best" / "meta.json") as f:
+        best_loss = json.load(f)["val_loss"]
+
+    return meta["train_ds_offset"], best_loss
 
 
 def save_checkpoint(
@@ -159,12 +163,15 @@ def generate_training_chart():
     plt.close(fig)
 
 
-def train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset):
+def train(
+    model, optimizer, scaler,
+    train_ds, val_ds,
+    train_ds_offset, best_loss
+):
     device = next(model.parameters()).device
 
     torch.set_float32_matmul_precision("high")
 
-    best_loss = None
     print(f"Starting training at dataset offset {train_ds_offset}")
     for ix in tqdm(range(train_ds_offset, len(train_ds))):
         model.train()
@@ -240,17 +247,24 @@ def main(checkpoint):
         lr=0.0004, weight_decay=0.1
     )
 
-    scaler = torch.amp.GradScaler(device=device.type)
+    scaler = torch.amp.GradScaler()
 
     train_ds = load_dataset("train")
     val_ds = load_dataset("validation")
 
     if checkpoint:
-        train_ds_offset = load_checkpoint(checkpoint, model, optimizer, scaler)
+        train_ds_offset, best_loss = load_checkpoint(
+            checkpoint, model, optimizer, scaler
+        )
     else:
         train_ds_offset = 0
+        best_loss = None
 
-    train(model, optimizer, scaler, train_ds, val_ds, train_ds_offset)
+    train(
+        model, optimizer, scaler,
+        train_ds, val_ds,
+        train_ds_offset, best_loss
+    )
 
 
 if __name__ == "__main__":
