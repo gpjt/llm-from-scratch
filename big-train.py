@@ -191,7 +191,7 @@ def train(
         scaler.step(optimizer)
         scaler.update()
 
-        if ix % VAL_AND_CHECKPOINT_INTERVAL == 0:
+        if (ix % VAL_AND_CHECKPOINT_INTERVAL == 0) or (ix == len(train_ds) - 1):
             print("Validation/checkpoint")
             model.eval()
             with torch.inference_mode(), torch.amp.autocast(device_type=device.type, dtype=torch.float16):
