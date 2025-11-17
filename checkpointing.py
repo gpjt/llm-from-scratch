@@ -9,11 +9,15 @@ MY_DIR = Path(__file__).resolve().parent
 CHECKPOINTS_DIR = MY_DIR / "big-train-checkpoints"
 
 
-def load_checkpoint(checkpoint, model, optimizer, scaler):
+def load_checkpoint(checkpoint, model, optimizer=None, scaler=None):
     checkpoint_dir = CHECKPOINTS_DIR / checkpoint
     model.load_state_dict(load_file(checkpoint_dir / "model.safetensors"))
-    optimizer.load_state_dict(torch.load(checkpoint_dir / "optimizer.pt"))
-    scaler.load_state_dict(torch.load(checkpoint_dir / "scaler.pt"))
+
+    if optimizer:
+        optimizer.load_state_dict(torch.load(checkpoint_dir / "optimizer.pt"))
+
+    if scaler:
+        scaler.load_state_dict(torch.load(checkpoint_dir / "scaler.pt"))
 
     with open(checkpoint_dir / "meta.json", "r") as f:
         meta = json.load(f)
