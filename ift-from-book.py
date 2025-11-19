@@ -251,7 +251,7 @@ def main():
         "drop_rate": 0.0,
         "qkv_bias": True,
     }
-    CHOOSE_MODEL = "gpt2-medium (355M)"
+    CHOOSE_MODEL = "gpt2-small (124M)"
     BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
 
     model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")

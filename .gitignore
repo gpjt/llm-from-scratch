@@ -7,6 +7,7 @@ classification-test.csv
 classification-train.csv
 classification-validation.csv
 instruction-data.json
+gpt2-small124M-sft.pth
 gpt2-medium355M-sft.pth
 instruction-data-with-responses.json
 instruction-fine-tune-2-epochs-losses-plot.png
