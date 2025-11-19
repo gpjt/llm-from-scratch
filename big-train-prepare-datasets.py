@@ -26,7 +26,10 @@ def build_and_save_dataset_tensor(ds, tokenizer, token_count, path):
     for ix in range(0, len(ds), batch_size):
         print(f"{num_tokens:,}/{token_count:,}")
         texts = ds[ix:ix + batch_size]["text"]
-        text_tokens = tokenizer.encode_batch(texts)
+        text_tokens = tokenizer.encode_batch(
+            texts,
+            allowed_special={'<|endoftext|>'}
+        )
         all_tokens = []
         for toks in text_tokens:
             all_tokens.extend(toks)
@@ -44,7 +47,7 @@ def build_and_save_dataset_tensor(ds, tokenizer, token_count, path):
 def main():
     splits = load_dataset(
         "parquet",
-        data_files="./fineweb/sample/10BT/*.parquet",
+        data_files="./fineweb-edu/sample/10BT/*.parquet",
         split={"train": "train[:99%]", "validation": "train[99%:]"}
     )
 
