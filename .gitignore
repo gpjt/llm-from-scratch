@@ -22,4 +22,5 @@ tmp-test-checkpoint
 big-train-datasets/
 big-train-checkpoints/
 big-train-datasets-fw/
+big-train-checkpoints-fw/
 big-training-run-chart.png
