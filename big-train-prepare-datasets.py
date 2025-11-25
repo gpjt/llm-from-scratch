@@ -20,24 +20,25 @@ TRAIN_TOKEN_COUNT = math.ceil(CHINCHILLA_OPTIMUM_TOKENS / BATCH_TOKENS) * BATCH_
 
 def build_and_save_dataset_tensor(ds, tokenizer, token_count, path):
     print(f"Building dataset for {path}")
-    results = []
-    num_tokens = 0
-    batch_size = 1000
-    for ix in range(0, len(ds), batch_size):
-        print(f"{num_tokens:,}/{token_count:,}")
-        texts = ds[ix:ix + batch_size]["text"]
-        text_tokens = tokenizer.encode_batch(
-            texts,
-            allowed_special={'<|endoftext|>'}
-        )
-        all_tokens = []
-        for toks in text_tokens:
-            all_tokens.extend(toks)
-            all_tokens.append(tokenizer.eot_token)
-        results.append(torch.tensor(all_tokens, dtype=torch.int32))
-        num_tokens += len(all_tokens)
-        if num_tokens > token_count:
-            break
+    for hack in range(2):
+        results = []
+        num_tokens = 0
+        batch_size = 1000
+        for ix in range(0, len(ds), batch_size):
+            print(f"{num_tokens:,}/{token_count:,}")
+            texts = ds[ix:ix + batch_size]["text"]
+            text_tokens = tokenizer.encode_batch(
+                texts,
+                allowed_special={'<|endoftext|>'}
+            )
+            all_tokens = []
+            for toks in text_tokens:
+                all_tokens.extend(toks)
+                all_tokens.append(tokenizer.eot_token)
+            results.append(torch.tensor(all_tokens, dtype=torch.int32))
+            num_tokens += len(all_tokens)
+            if num_tokens > token_count:
+                break
     result = torch.cat(results)
     result = result[:token_count]
     print(f"Saving {result.shape[0]} tokens to {path}")

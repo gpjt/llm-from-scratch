@@ -23,4 +23,6 @@ big-train-datasets/
 big-train-checkpoints/
 big-train-datasets-fw/
 big-train-checkpoints-fw/
+big-train-checkpoints-fw-edu/
+big-train-datasets-fw-edu/
 big-training-run-chart.png
