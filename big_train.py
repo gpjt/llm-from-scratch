@@ -117,6 +117,7 @@ def train(
     torch.set_float32_matmul_precision("high")
 
     print(f"Starting training at dataset offset {train_ds_offset}")
+    train_losses = []
     for ix in tqdm(range(train_ds_offset, len(train_ds))):
         model.train()
         inputs, targets = train_ds[ix]
@@ -133,6 +134,7 @@ def train(
         scaler.scale(train_loss).backward()
         scaler.step(optimizer)
         scaler.update()
+        train_losses.append(train_loss.item())
 
         if (ix % VAL_AND_CHECKPOINT_INTERVAL == 0) or (ix == len(train_ds) - 1):
             print("Validation/checkpoint")
@@ -154,10 +156,13 @@ def train(
             else:
                 is_best = False
 
+            avg_train_loss = sum(train_losses) / len(train_losses)
+            train_losses = []
+
             save_checkpoint(
                 f"iteration-{ix}",
                 model, optimizer, scaler,
-                train_loss.item(), val_loss,
+                avg_train_loss, val_loss,
                 ix,
                 is_best
             )
