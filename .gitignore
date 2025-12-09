@@ -29,3 +29,5 @@ big-train-datasets-fw-edu/
 big-train-checkpoints-fw-edu/
 big-train-datasets-fw-edu-2x/
 big-train-checkpoints-fw-edu-2x/
+gpt-2-medium.safetensors
+gpt-2-small.safetensors

@@ -30,7 +30,7 @@ def assign(left, right):
         raise ValueError(
             f"Shape mismatch.  Left: {left.shape}, Right: {right.shape}"
         )
-    return torch.nn.Parameter(torch.tensor(right))
+    return torch.nn.Parameter(torch.tensor(right).contiguous())
 
 
 def load_weights_into_gpt(gpt, params):
