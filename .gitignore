@@ -21,8 +21,8 @@ fineweb/
 fineweb-token-length-distribution.png
 tmp-test-checkpoint
 big-training-run-chart.png
-big-train-datasets/
-big-train-checkpoints/
+big-train-datasets
+big-train-checkpoints
 big-train-datasets-fw/
 big-train-checkpoints-fw/
 big-train-datasets-fw-edu/
